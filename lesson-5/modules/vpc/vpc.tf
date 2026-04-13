@@ -56,7 +56,6 @@ resource "aws_nat_gateway" "main" {
   depends_on = [aws_internet_gateway.main]
 }
 
-# Route table для приватных подсетей (через NAT Gateway)
 resource "aws_route_table" "private" {
   vpc_id = aws_vpc.main.id
 
