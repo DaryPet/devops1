@@ -4,7 +4,7 @@
 Terraform-structure on AWS.
 
 ## Project structure
-lesson-5/
+lesson-7/
 ├── main.tf
 ├── backend.tf
 ├── outputs.tf
@@ -13,6 +13,17 @@ lesson-5/
 ├── s3-backend/
 ├── vpc/
 └── ecr/
+└── eks/
+└── charts/
+└── django-app/
+├── templates/
+│ ├── deployment.yaml
+│ ├── service.yaml
+│ ├── configmap.yaml
+│ └── hpa.yaml
+├── Chart.yaml
+└── values.yaml
+
 
 ## Modules
 
@@ -33,10 +44,30 @@ lesson-5/
 - Enables scan on push for vulnerability scanning
 - Outputs repository URL
 
+## Components
+
+### 1. EKS Cluster
+- Kubernetes cluster created via Terraform
+- Node group with t3.micro instances
+- Autoscaling: 2-6 nodes based on CPU >70%
+
+### 2. ECR Repository
+- Stores Django Docker image
+- Image built from lesson-4-docker
+
+### 3. Helm Chart
+- **Deployment**: Django app with ConfigMap via envFrom
+- **Service**: LoadBalancer for external access
+- **HPA**: 2-6 replicas, target CPU 70%
+- **ConfigMap**: Environment variables from topic 4
+
 ## Prerequisites
 - AWS CLI configured (`aws configure`)
 - Terraform >= 1.0
 - AWS account with permissions for S3, DynamoDB, EC2, ECR
+- kubectl
+- Helm >= 3.0
+- Docker
 
 
 ## Run
@@ -46,3 +77,16 @@ terraform plan
 terraform apply
 terraform destroy
 ```
+
+
+# Configure kubectl
+aws eks update-kubeconfig --region us-east-1 --name django-cluster
+
+# Deploy Helm chart
+helm install django-app ./charts/django-app
+
+# Check resources
+kubectl get pods
+kubectl get svc
+kubectl get hpa
+kubectl get configmap
