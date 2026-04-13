@@ -17,13 +17,27 @@ lesson-5/
 ## Modules
 
 ### s3-backend
-Create S3 bucket for Terraform state and DynamoDB.
+- Creates S3 bucket for Terraform state with versioning enabled
+- Creates DynamoDB table for state locking
+- Prevents accidental bucket deletion
 
 ### vpc
-Create VPC, Internet Gateway and Route Tables.
+- Creates VPC with configurable CIDR block
+- Creates 3 public and 3 private subnets
+- Internet Gateway for public subnets
+- NAT Gateway for private subnets (internet access)
+- Route tables and associations
 
 ### ecr
-Create ECR for Docker.
+- Creates ECR repository for Docker images
+- Enables scan on push for vulnerability scanning
+- Outputs repository URL
+
+## Prerequisites
+- AWS CLI configured (`aws configure`)
+- Terraform >= 1.0
+- AWS account with permissions for S3, DynamoDB, EC2, ECR
+
 
 ## Run
 ```bash
