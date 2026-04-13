@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-config
+data:
+  DEBUG: {{ .Values.config.DEBUG | quote }}
+  ALLOWED_HOSTS: {{ .Values.config.ALLOWED_HOSTS | quote }}
