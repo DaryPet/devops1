@@ -22,13 +22,13 @@ variable "node_group_name" {
 variable "instance_type" {
   description = "EC2 instance type for nodes"
   type        = string
-  default     = "t3.micro"
+  default     = "t3.medium"
 }
 
 variable "desired_size" {
   description = "Desired number of nodes"
   type        = number
-  default     = 2
+  default     = 3
 }
 
 variable "max_size" {

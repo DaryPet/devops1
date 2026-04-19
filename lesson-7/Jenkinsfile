@@ -1,0 +1,117 @@
+pipeline {
+  agent {
+    kubernetes {
+      yaml """
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: jenkins-agent
+spec:
+  serviceAccountName: jenkins
+  containers:
+  # Kaniko — собирает Docker образ без Docker daemon
+  - name: kaniko
+    image: gcr.io/kaniko-project/executor:debug
+    command: ["/busybox/cat"]
+    tty: true
+    volumeMounts:
+    - name: aws-credentials
+      mountPath: /root/.aws
+    resources:
+      requests:
+        cpu: "250m"
+        memory: "512Mi"
+
+  - name: git
+    image: alpine/git:latest
+    command: ["cat"]
+    tty: true
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "128Mi"
+
+  volumes:
+  - name: aws-credentials
+    secret:
+      secretName: aws-credentials
+"""
+    }
+  }
+
+  environment {
+    AWS_REGION      = "us-east-1"
+    AWS_ACCOUNT_ID  = "453767499372"
+    ECR_REPO        = "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/lesson-5-ecr"
+
+    HELM_REPO       = "github.com/DaryPet/devops1.git"
+    HELM_REPO_BRANCH = "lesson-8-9"
+    HELM_VALUES_PATH = "lesson-7/charts/django-app/values.yaml"
+
+    IMAGE_TAG       = "${env.GIT_COMMIT?.take(7) ?: env.BUILD_NUMBER}"
+  }
+
+  stages {
+
+    stage('Checkout') {
+      steps {
+        checkout scm
+        script {
+          env.IMAGE_TAG = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+          echo "Building image with tag: ${env.IMAGE_TAG}"
+        }
+      }
+    }
+
+    stage('Build & Push to ECR') {
+      steps {
+        container('kaniko') {
+          sh """
+            /kaniko/executor \\
+              --context=dir://${WORKSPACE} \\
+              --dockerfile=${WORKSPACE}/lesson-4-docker/Dockerfile \\
+              --destination=${ECR_REPO}:${IMAGE_TAG} \\
+              --destination=${ECR_REPO}:latest \\
+              --cache=true \\
+              --cache-repo=${ECR_REPO}/cache
+          """
+        }
+      }
+    }
+
+    stage('Update Helm chart') {
+      steps {
+        container('git') {
+          withCredentials([usernamePassword(
+            credentialsId: 'github-credentials',
+            usernameVariable: 'GIT_USER',
+            passwordVariable: 'GIT_TOKEN'
+          )]) {
+            sh """
+              git clone https://${GIT_USER}:${GIT_TOKEN}@${HELM_REPO} /tmp/helm-repo
+              cd /tmp/helm-repo
+
+              sed -i 's|tag:.*|tag: "${IMAGE_TAG}"|' ${HELM_VALUES_PATH}
+              git config user.email "jenkins@ci.local"
+              git config user.name "Jenkins CI"
+              git add ${HELM_VALUES_PATH}
+              git commit -m "ci: update django-app image tag to ${IMAGE_TAG}"
+              git push origin ${HELM_REPO_BRANCH}
+            """
+          }
+        }
+      }
+    }
+  }
+
+  post {
+    success {
+      echo "Pipeline successfully completed! Image: ${ECR_REPO}:${IMAGE_TAG}"
+      echo "Argo CD will pick up the change and deploy the new version automatically."
+    }
+    failure {
+      echo "Pipeline failed. Please check the logs above."
+    }
+  }
+}

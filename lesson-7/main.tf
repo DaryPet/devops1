@@ -26,12 +26,32 @@ module "ecr" {
 module "eks" {
   source = "./modules/eks"
 
-  cluster_name         = "django-cluster"
-  kubernetes_version   = "1.30"
-  subnet_ids           = module.vpc.private_subnet_ids
-  node_group_name      = "django-nodes"
-  instance_type        = "t3.micro"
-  desired_size         = 2
-  max_size             = 3
-  min_size             = 1
+  cluster_name       = "django-cluster"
+  kubernetes_version = "1.30"
+  subnet_ids         = module.vpc.private_subnet_ids
+  node_group_name    = "django-nodes"
+  instance_type      = "t3.micro"
+  desired_size       = 2
+  max_size           = 3
+  min_size           = 1
 }
+
+module "jenkins" {
+  source = "./modules/jenkins"
+
+  cluster_name       = module.eks.cluster_name
+  admin_password     = var.jenkins_admin_password
+  ecr_repository_url = module.ecr.ecr_repository_url
+  git_repo_url       = var.git_repo_url
+}
+
+module "argo_cd" {
+  source = "./modules/argo_cd"
+
+  cluster_name    = module.eks.cluster_name
+  git_repo_url    = var.git_repo_url
+  git_repo_branch = "lesson-8-9"
+  git_token       = var.git_token
+  app_namespace   = "default"
+}
+

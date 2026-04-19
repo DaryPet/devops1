@@ -1,4 +1,4 @@
-# Lesson 5 - Terraform AWS Infrastructure
+# Lesson 8-9 — CI/CD з Jenkins та Argo CD
 
 ## Project description
 Terraform-structure on AWS.
@@ -8,21 +8,24 @@ lesson-7/
 ├── main.tf
 ├── backend.tf
 ├── outputs.tf
+├── variables.tf
 ├── README.md
 └── modules/
-├── s3-backend/
-├── vpc/
-└── ecr/
-└── eks/
+    ├── s3-backend/
+    ├── vpc/
+    ├── ecr/
+    ├── eks/
+    ├── jenkins/
+    └── argo_cd/
 └── charts/
-└── django-app/
-├── templates/
-│ ├── deployment.yaml
-│ ├── service.yaml
-│ ├── configmap.yaml
-│ └── hpa.yaml
-├── Chart.yaml
-└── values.yaml
+    └── django-app/
+        ├── templates/
+        │   ├── deployment.yaml
+        │   ├── service.yaml
+        │   ├── configmap.yaml
+        │   └── hpa.yaml
+        ├── Chart.yaml
+        └── values.yaml
 
 
 ## Modules
@@ -44,6 +47,21 @@ lesson-7/
 - Enables scan on push for vulnerability scanning
 - Outputs repository URL
 
+### eks
+- Creates EKS cluster
+- Node group with t3.micro instances
+- EBS CSI driver for persistent volumes
+
+### jenkins
+- Installs Jenkins via Helm
+- Kubernetes agent with Kaniko + Git
+- Pipeline: build → push to ECR → update values.yaml → push to Git
+
+### argo_cd
+- Installs Argo CD via Helm
+- Application tracks Helm chart from Git
+- Auto-sync enabled
+
 ## Components
 
 ### 1. EKS Cluster
@@ -61,6 +79,15 @@ lesson-7/
 - **HPA**: 2-6 replicas, target CPU 70%
 - **ConfigMap**: Environment variables from topic 4
 
+### 4. Jenkins CI
+- Installed via Helm module
+- Pipeline: builds image with Kaniko, pushes to ECR, updates tag in values.yaml, commits to Git
+
+### 5. Argo CD
+- Installed via Helm module
+- Watches Helm chart repository
+- Auto-syncs changes to Kubernetes cluster
+
 ## Prerequisites
 - AWS CLI configured (`aws configure`)
 - Terraform >= 1.0
@@ -68,6 +95,7 @@ lesson-7/
 - kubectl
 - Helm >= 3.0
 - Docker
+- GitHub token (for Argo CD)
 
 
 ## Run
@@ -90,3 +118,17 @@ kubectl get pods
 kubectl get svc
 kubectl get hpa
 kubectl get configmap
+
+# Jenkins
+`kubectl exec --namespace jenkins -it svc/jenkins -c jenkins -- cat /var/jenkins_home/secrets/initialAdminPassword`
+
+`kubectl port-forward svc/jenkins -n jenkins 8080:8080`
+
+Open http://localhost:8080
+
+# Argo CD
+
+`kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d`
+`kubectl port-forward svc/argocd-server -n argocd 8080:443`
+
+Open https://localhost:8080 (login: admin, password from previous step)

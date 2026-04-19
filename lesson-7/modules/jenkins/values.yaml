@@ -1,0 +1,74 @@
+controller:
+  serviceType: LoadBalancer
+  servicePort: 8080
+
+  installPlugins:
+    - kubernetes:latest
+    - workflow-aggregator:latest
+    - git:latest
+    - configuration-as-code:latest
+    - amazon-ecr:latest
+    - aws-credentials:latest
+    - pipeline-aws:latest
+
+  resources:
+    requests:
+      cpu: "250m"
+      memory: "512Mi"
+    limits:
+      cpu: "500m"
+      memory: "1Gi"
+
+  initScripts:
+    - |
+      import jenkins.model.*
+      import org.csanchez.jenkins.plugins.kubernetes.*
+      import org.csanchez.jenkins.plugins.kubernetes.volumes.*
+
+      def jenkins = Jenkins.getInstance()
+      def cloud = new KubernetesCloud('kubernetes')
+      cloud.setServerUrl('')
+      cloud.setNamespace('jenkins')
+      cloud.setJenkinsUrl('http://jenkins.jenkins.svc.cluster.local:8080')
+      cloud.setJenkinsTunnel('jenkins-agent.jenkins.svc.cluster.local:50000')
+      jenkins.clouds.replace(cloud)
+      jenkins.save()
+
+persistence:
+  enabled: true
+  size: 8Gi
+  storageClass: ""
+
+serviceAccount:
+  create: true
+  name: jenkins
+
+rbac:
+  create: true
+  readSecrets: true
+
+agent:
+  enabled: true
+  namespace: jenkins
+
+  containers:
+    - name: kaniko
+      image: gcr.io/kaniko-project/executor:debug
+      command: /busybox/cat
+      tty: true
+      resourceRequestCpu: "250m"
+      resourceRequestMemory: "512Mi"
+      resourceLimitCpu: "500m"
+      resourceLimitMemory: "1Gi"
+
+    - name: git
+      image: alpine/git:latest
+      command: cat
+      tty: true
+      resourceRequestCpu: "100m"
+      resourceRequestMemory: "128Mi"
+
+  volumes:
+    - type: Secret
+      secretName: aws-credentials
+      mountPath: /root/.aws
