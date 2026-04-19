@@ -25,13 +25,12 @@ module "ecr" {
 
 module "eks" {
   source = "./modules/eks"
-
   cluster_name       = "django-cluster"
   kubernetes_version = "1.30"
   subnet_ids         = module.vpc.private_subnet_ids
   node_group_name    = "django-nodes"
   instance_type      = "t3.micro"
-  desired_size       = 2
+  desired_size       = 3
   max_size           = 3
   min_size           = 1
 }
