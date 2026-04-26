@@ -21,3 +21,18 @@ output "private_subnet_ids" {
 output "ecr_repository_url" {
   value = module.ecr.ecr_repository_url
 }
+
+output "db_endpoint" {
+  description = "Database connection endpoint"
+  value       = module.rds.db_endpoint
+}
+
+output "db_port" {
+  description = "Database port"
+  value       = module.rds.db_port
+}
+
+output "db_name" {
+  description = "Database name"
+  value       = module.rds.db_name
+}

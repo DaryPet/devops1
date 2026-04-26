@@ -24,7 +24,7 @@ module "ecr" {
 }
 
 module "eks" {
-  source = "./modules/eks"
+  source             = "./modules/eks"
   cluster_name       = "django-cluster"
   kubernetes_version = "1.30"
   subnet_ids         = module.vpc.private_subnet_ids
@@ -54,3 +54,56 @@ module "argo_cd" {
   app_namespace   = "default"
 }
 
+# ─────────────────────────────────────────────
+# RDS Module
+# Switching between Aurora and regular RDS
+# is controlled by use_aurora variable.
+#
+# use_aurora = false → single aws_db_instance (PostgreSQL)
+# use_aurora = true  → Aurora Cluster + writer instance
+# ─────────────────────────────────────────────
+module "rds" {
+  source = "./modules/rds"
+
+  # --- Main switch ---
+  use_aurora = false
+
+  # --- DB identity ---
+  identifier = "darya-petrenko-db"
+  db_name    = "appdb"
+
+  # --- Engine ---
+  # For regular RDS:    engine = "postgres",          engine_version = "15.12",   family = "postgres15"
+  # For regular RDS:    engine = "mysql",             engine_version = "8.0",    family = "mysql8.0"
+  # For Aurora Postgres: engine = "aurora-postgresql", engine_version = "15.12",   family = "aurora-postgresql15"
+  # For Aurora MySQL:    engine = "aurora-mysql",      engine_version = "8.0.mysql_aurora.3.04.0", family = "aurora-mysql8.0"
+  engine         = "postgres"
+  engine_version = "15"
+  family         = "postgres15"
+
+  # --- Instance ---
+  instance_class    = "db.t3.micro"
+  allocated_storage = 20  # ignored for Aurora
+
+  # --- Credentials (from variables) ---
+  db_username = var.db_username
+  db_password = var.db_password
+
+  # --- High availability (RDS only) ---
+  multi_az = false
+
+  # --- Networking (from VPC module) ---
+  vpc_id         = module.vpc.vpc_id
+  subnet_ids     = module.vpc.private_subnet_ids
+  vpc_cidr_block = "10.0.0.0/16"
+
+  # --- Lifecycle ---
+  skip_final_snapshot = true   # set false in production!
+  deletion_protection = false  # set true in production!
+
+  tags = {
+    Project   = "devops1"
+    ManagedBy = "terraform"
+    Lesson    = "db-module"
+  }
+}
