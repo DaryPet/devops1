@@ -1,4 +1,4 @@
-# Lesson 8-9 — CI/CD з Jenkins та Argo CD
+# Lesson 10 -DB Module
 
 ## Project description
 Terraform-structure on AWS.
