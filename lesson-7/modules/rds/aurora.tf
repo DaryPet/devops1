@@ -18,7 +18,7 @@ resource "aws_rds_cluster" "main" {
   db_cluster_parameter_group_name = aws_rds_cluster_parameter_group.aurora[0].name
 
   # Backup
-  backup_retention_period = 7
+  backup_retention_period = 1
   preferred_backup_window = "03:00-04:00"
   preferred_maintenance_window = "mon:04:00-mon:05:00"
 
