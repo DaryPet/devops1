@@ -17,6 +17,7 @@ lesson-7/
     ├── eks/
     ├── jenkins/
     └── argo_cd/
+    └── monitoring/
 └── charts/
     └── django-app/
         ├── templates/
@@ -26,6 +27,7 @@ lesson-7/
         │   └── hpa.yaml
         ├── Chart.yaml
         └── values.yaml
+    
 
 
 ## Modules
@@ -100,6 +102,12 @@ lesson-7/
 - Deployed in private subnets, not publicly accessible
 - Storage encrypted, 7-day backup retention
 
+### monitoring
+- Installs Prometheus + Grafana via kube-prometheus-stack Helm chart
+- Scrapes metrics from all namespaces
+- Grafana dashboards enabled by default
+- Alertmanager included
+
 ## Prerequisites
 - AWS CLI configured (`aws configure`)
 - Terraform >= 1.0
@@ -136,6 +144,14 @@ kubectl get configmap
 `kubectl exec --namespace jenkins -it svc/jenkins -c jenkins -- cat /var/jenkins_home/secrets/initialAdminPassword`
 
 `kubectl port-forward svc/jenkins -n jenkins 8080:8080`
+
+# Grafana
+kubectl port-forward svc/prometheus-grafana 3000:80 -n monitoring
+# Open http://localhost:3000 (login: admin / admin123)
+
+# Prometheus
+kubectl port-forward svc/prometheus-kube-prometheus-prometheus 9090:9090 -n monitoring
+# Open http://localhost:9090
 
 Open http://localhost:8080
 
